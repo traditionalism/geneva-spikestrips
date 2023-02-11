@@ -1,9 +1,9 @@
 # geneva-spikestrips
 
-Disclaimer!
+**Disclaimer!**
 This is still a heavy WIP resource, actual spiking logic has yet to be implemented.
 
-To edit it, open `spikestrips.sln` in Visual Studio.
+To edit it, open `spikestrips.sln` in Visual Studio (or an equivalent).
 
 To build it, run `build.cmd`. To run it, run the following commands to make a symbolic link in your server data directory:
 
