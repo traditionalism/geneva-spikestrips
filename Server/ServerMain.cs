@@ -95,9 +95,22 @@ namespace spikestrips.Server
         }
 
         [Command("deleteallspikes")]
-        private void DeleteAllSpikesCmd()
+        private void DeleteAllSpikesCmd([FromSource] Player source)
         {
-
+            if (IsPlayerAceAllowed(source.Handle, "spikestrips.deleteAll"))
+            {
+                Debug.WriteLine($"{source.Name} executed the 'deleteallspikes' command!");
+                DeleteAllStrips();
+            }
+            else
+            {
+                source.TriggerEvent("chat:addMessage", new
+                {
+                    color = new[] {255, 0, 0},
+                    args = new[] {"[Spikestrips]", "You can't execute this!"}
+                });
+                return;
+            }
         }
     }
 }
