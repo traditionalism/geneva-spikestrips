@@ -122,14 +122,9 @@ namespace spikestrips.Client
             isDeployingStrips = true;
             Screen.ShowNotification("Deploying...");
 
-            SetCurrentPedWeapon(player.Handle, (uint)WeaponHash.Unarmed, true);
-            RequestAnimDict("amb@medic@standing@kneel@idle_a");
-            while (!HasAnimDictLoaded("amb@medic@standing@kneel@idle_a"))
-            {
-                await Delay(0);
-            }
-            TaskPlayAnim(player.Handle, "amb@medic@standing@kneel@idle_a", "idle_a", 2.5f, 2.5f, deployTime, 0, 0.0f, false, false, false);
+            PlayKneelAnim(true);
             await Delay(deployTime);
+            RemoveAnimDict("amb@medic@standing@kneel@idle_a");
             List<float> groundHeights = new List<float>();
             for (int i = 0; i < numToDeploy; i++)
             {
@@ -139,8 +134,19 @@ namespace spikestrips.Client
             }
             TriggerServerEvent("geneva-spikestrips:server:spawnStrips", numToDeploy, player.ForwardVector, groundHeights);
             Screen.ShowNotification("Deployed!", true);
-            RemoveAnimDict("amb@medic@standing@kneel@idle_a");
             isDeployingStrips = false;
+        }
+
+        private async void PlayKneelAnim(bool deploy)
+        {
+            Ped player = Game.PlayerPed;
+            SetCurrentPedWeapon(player.Handle, (uint)WeaponHash.Unarmed, true);
+            RequestAnimDict("amb@medic@standing@kneel@idle_a");
+            while (!HasAnimDictLoaded("amb@medic@standing@kneel@idle_a"))
+            {
+                await Delay(0);
+            }
+            TaskPlayAnim(player.Handle, "amb@medic@standing@kneel@idle_a", "idle_a", 2.5f, 2.5f, deploy ? deployTime : retractTime, 0, 0.0f, false, false, false);
         }
     }
 }
