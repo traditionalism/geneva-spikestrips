@@ -13,8 +13,8 @@ namespace spikestrips.Client
         private int numToDeploy = 2;
         private bool isDeployingStrips = false;
         private static string ourResourceName = GetCurrentResourceName();
-        private int deployTime = (int)ParseConfigValue<int>("deploy_time", 4) * 1000;
-        private int retractTime = (int)ParseConfigValue<int>("retract_time", 1) * 1000;
+        private int deployTime = (int)ParseConfigValue<int>("deploy_time", 2500);
+        private int retractTime = (int)ParseConfigValue<int>("retract_time", 2000);
         private int minSpikes = (int)ParseConfigValue<int>("min_spikes", 2);
         private int maxSpikes = (int)ParseConfigValue<int>("max_spikes", 4);
 
