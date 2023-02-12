@@ -14,6 +14,7 @@ namespace spikestrips.Client
         private bool isDeployingStrips = false;
         private static string ourResourceName = GetCurrentResourceName();
         private int deployTime = (int)ParseConfigValue<int>("deploy_time", 4) * 1000;
+        private int retractTime = (int)ParseConfigValue<int>("retract_time", 1) * 1000;
         private int minSpikes = (int)ParseConfigValue<int>("min_spikes", 2);
         private int maxSpikes = (int)ParseConfigValue<int>("max_spikes", 4);
 
@@ -69,7 +70,7 @@ namespace spikestrips.Client
 
             if (closestStrip == 0 || NetworkGetEntityOwner(closestStrip) != Game.Player.Handle)
             {
-                await Delay(4000);
+                await Delay(3500);
                 return;
             }
 
@@ -81,14 +82,20 @@ namespace spikestrips.Client
                 return;
             }
 
-            if (dist <= 2.5f)
+            if (CanUseSpikestrips && dist <= 2.8f)
             {
                 Screen.DisplayHelpTextThisFrame("Press ~INPUT_DETONATE~ to retract the spikestrips");
 
                 if (IsControlJustPressed(0, 47))
                 {
+                    Vector3 spikePos = GetEntityCoords(closestStrip, false);
+                    float heading = GetHeadingFromVector_2d(spikePos.X - plyPos.X, spikePos.X - plyPos.Y);
+                    SetEntityHeading(Game.PlayerPed.Handle, heading);
+
+                    PlayKneelAnim(false);
+                    await Delay(retractTime);
                     TriggerServerEvent("geneva-spikestrips:server:deleteSpikestrips");
-                    await Delay(500);
+                    await Delay(150);
                 }
             }
         }
