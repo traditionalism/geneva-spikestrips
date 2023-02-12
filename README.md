@@ -13,4 +13,4 @@ Afterwards, you can use `ensure spikestrips` in your server.cfg or server consol
 
 ## Configuration
 
-This resource is completely confirgued using the `fxmanifest.lua` file, the three manifest metadata entries at the bottom are currently the only configurable options. Although, I plan to add more in the near future.
+This resource is completely confirgued using the `fxmanifest.lua` file, the manifest metadata entries at the bottom are currently the only configurable options. Although, I plan to add more in the near future.
