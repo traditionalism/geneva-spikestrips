@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using CitizenFX.Core;
 using CitizenFX.Core.UI;
@@ -11,7 +12,6 @@ namespace spikestrips.Client
         private readonly uint spikeModel = (uint)GetHashKey("p_ld_stinger_s");
         private int numToDeploy = 2;
         private bool isDeployingStrips = false;
-        private float groundHeight;
         private static string ourResourceName = GetCurrentResourceName();
         private int deployTime = (int)ParseConfigValue<int>("deploy_time", 4) * 1000;
         private int minSpikes = (int)ParseConfigValue<int>("min_spikes", 2);
@@ -75,13 +75,13 @@ namespace spikestrips.Client
 
             float dist = Vector3.DistanceSquared(plyPos, GetEntityCoords(closestStrip, false));
 
-            if (dist >= 5.0f)
+            if (dist >= 6.0f)
             {
                 await Delay(1500);
                 return;
             }
 
-            if (dist <= 2.3f)
+            if (dist <= 2.5f)
             {
                 Screen.DisplayHelpTextThisFrame("Press ~INPUT_DETONATE~ to retract the spikestrips");
 
@@ -130,17 +130,17 @@ namespace spikestrips.Client
             }
             TaskPlayAnim(player.Handle, "amb@medic@standing@kneel@idle_a", "idle_a", 2.5f, 2.5f, deployTime, 0, 0.0f, false, false, false);
             await Delay(deployTime);
-            TriggerServerEvent("geneva-spikestrips:server:spawnStrips", numToDeploy, player.ForwardVector);
+            List<float> groundHeights = new List<float>();
+            for (int i = 0; i < numToDeploy; i++)
+            {
+                Vector3 spawnCoords = new Vector3(player.Position.X, player.Position.Y, player.Position.Z) + player.ForwardVector * (3.4f + (4.825f * i));
+                float groundHeight = World.GetGroundHeight(spawnCoords);
+                groundHeights.Add(groundHeight);
+            }
+            TriggerServerEvent("geneva-spikestrips:server:spawnStrips", numToDeploy, player.ForwardVector, groundHeights);
             Screen.ShowNotification("Deployed!", true);
             RemoveAnimDict("amb@medic@standing@kneel@idle_a");
             isDeployingStrips = false;
-        }
-
-        [EventHandler("geneva-spikestrips:client:getGroundHeight")]
-        private void GetGroundHeight(Vector3 pos)
-        {
-            groundHeight = World.GetGroundHeight(pos);
-            TriggerServerEvent("geneva-spikestrips:server:getGroundHeight", groundHeight);
         }
     }
 }

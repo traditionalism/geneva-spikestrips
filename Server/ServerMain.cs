@@ -13,7 +13,6 @@ namespace spikestrips.Server
         private string ourResourceName = GetCurrentResourceName();
         private List<int> spawnedStrips = new();
         private Vector3 spawnCoords;
-        private float groundHeight;
         private int numDeleting = 0;
 
         [EventHandler("onResourceStop")]
@@ -53,28 +52,22 @@ namespace spikestrips.Server
         }
 
         [EventHandler("geneva-spikestrips:server:spawnStrips")]
-        private async void OnSpawnStrips([FromSource] Player source, int numToDeploy, Vector3 fwdVec)
+        private async void OnSpawnStrips([FromSource] Player source, int numToDeploy, Vector3 fwdVec, List<object> groundHeights)
         {
             Vector3 plyPos = source.Character.Position;
             float heading = source.Character.Heading;
 
-            for (int i = 0; numToDeploy > i; i++)
+            for (int i = 0; i < numToDeploy; i++)
             {
                 spawnCoords = new Vector3(plyPos.X, plyPos.Y, plyPos.Z) + fwdVec * (3.4f + (4.825f * i));
                 TriggerClientEvent(source, "geneva-spikestrips:client:getGroundHeight", spawnCoords);
                 await Delay(150);
-                Entity entity = new Prop(CreateObject((int)spikeModel, spawnCoords.X, spawnCoords.Y, groundHeight, true, true, false));
+                Entity entity = new Prop(CreateObject((int)spikeModel, spawnCoords.X, spawnCoords.Y, (float)groundHeights[i], true, true, false));
                 entity.Heading = heading;
                 entity.IsPositionFrozen = true;
 
                 spawnedStrips.Add(entity.Handle);
             }
-        }
-
-        [EventHandler("geneva-spikestrips:server:getGroundHeight")]
-        private void GetGroundHeight(float newGroundHeight)
-        {
-            groundHeight = newGroundHeight;
         }
 
         [EventHandler("geneva-spikestrips:server:deleteSpikestrips")]
