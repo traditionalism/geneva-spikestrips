@@ -48,7 +48,7 @@ namespace spikestrips.Server
         }
 
         [EventHandler("geneva-spikestrips:server:spawnStrips")]
-        private async void OnSpawnStrips([FromSource] Player source, int numToDeploy, Vector3 fwdVec, List<object> groundHeights)
+        private void OnSpawnStrips([FromSource] Player source, int numToDeploy, Vector3 fwdVec, List<object> groundHeights)
         {
             Vector3 plyPos = source.Character.Position;
             float heading = source.Character.Heading;
@@ -56,7 +56,6 @@ namespace spikestrips.Server
             for (int i = 0; i < numToDeploy; i++)
             {
                 spawnCoords = new Vector3(plyPos.X, plyPos.Y, plyPos.Z) + fwdVec * (3.4f + (4.825f * i));
-                await Delay(150);
                 Entity entity = new Prop(CreateObject((int)spikeModel, spawnCoords.X, spawnCoords.Y, (float)groundHeights[i], true, true, false));
                 entity.Heading = heading;
                 entity.IsPositionFrozen = true;
