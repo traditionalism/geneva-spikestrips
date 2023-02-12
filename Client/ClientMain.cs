@@ -12,8 +12,8 @@ namespace spikestrips.Client
         private readonly uint spikeModel = (uint)GetHashKey("p_ld_stinger_s");
         private bool isDeployingStrips = false;
         private static string ourResourceName = GetCurrentResourceName();
-        private int deployTime = (int)ParseConfigValue<int>("deploy_time", 2500);
-        private int retractTime = (int)ParseConfigValue<int>("retract_time", 2000);
+        private int deployTime = (int)ParseConfigValue<int>("deploy_time", 1500);
+        private int retractTime = (int)ParseConfigValue<int>("retract_time", 1500);
         private int minSpikes = (int)ParseConfigValue<int>("min_spikes", 2);
         private int maxSpikes = (int)ParseConfigValue<int>("max_spikes", 4);
 
@@ -83,9 +83,9 @@ namespace spikestrips.Client
 
             if (CanUseSpikestrips && dist <= 4.3f)
             {
-                Screen.DisplayHelpTextThisFrame("Press ~INPUT_DETONATE~ to retract the spikestrips");
+                Screen.DisplayHelpTextThisFrame("Press ~INPUT_CHARACTER_WHEEL~ + ~INPUT_CONTEXT~ to retract the spikestrips");
 
-                if (IsControlJustPressed(0, 47))
+                if (IsControlPressed(0, 19) && IsControlPressed(0, 51))
                 {
                     Vector3 spikePos = GetEntityCoords(closestStrip, false);
                     float heading = GetHeadingFromVector_2d(spikePos.X - plyPos.X, spikePos.X - plyPos.Y);
