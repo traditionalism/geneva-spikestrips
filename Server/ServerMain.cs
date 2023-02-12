@@ -38,16 +38,12 @@ namespace spikestrips.Server
         {
             numDeleting = spawnedStrips.Count;
             Debug.WriteLine($"Deleting {numDeleting} spikestrip(s).");
-            List<int> handlesToRemove = new List<int>();
-            foreach (int handle in spawnedStrips)
-            {
-                DeleteEntity(handle);
-                handlesToRemove.Add(handle);
-            }
 
-            foreach (int handle in handlesToRemove)
+            for (int i = 0; i < spawnedStrips.Count; i++)
             {
-                spawnedStrips.Remove(handle);
+                int handle = spawnedStrips[i];
+                DeleteEntity(handle);
+                spawnedStrips.RemoveAt(i--);
             }
         }
 
@@ -60,7 +56,6 @@ namespace spikestrips.Server
             for (int i = 0; i < numToDeploy; i++)
             {
                 spawnCoords = new Vector3(plyPos.X, plyPos.Y, plyPos.Z) + fwdVec * (3.4f + (4.825f * i));
-                TriggerClientEvent(source, "geneva-spikestrips:client:getGroundHeight", spawnCoords);
                 await Delay(150);
                 Entity entity = new Prop(CreateObject((int)spikeModel, spawnCoords.X, spawnCoords.Y, (float)groundHeights[i], true, true, false));
                 entity.Heading = heading;
@@ -74,15 +69,9 @@ namespace spikestrips.Server
         private void DeleteSpikestrips([FromSource] Player source)
         {
             int playerHandle = int.Parse(source.Handle);
-            List<int> handlesToRemove = new List<int>();
-            foreach (int handle in spawnedStrips)
+            foreach (int handle in spawnedStrips.ToList())
             {
                 DeleteEntity(handle);
-                handlesToRemove.Add(handle);
-            }
-
-            foreach (int handle in handlesToRemove)
-            {
                 spawnedStrips.Remove(handle);
             }
         }

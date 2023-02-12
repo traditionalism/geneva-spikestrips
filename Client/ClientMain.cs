@@ -10,7 +10,6 @@ namespace spikestrips.Client
     public class ClientMain : BaseScript
     {
         private readonly uint spikeModel = (uint)GetHashKey("p_ld_stinger_s");
-        private int numToDeploy = 2;
         private bool isDeployingStrips = false;
         private static string ourResourceName = GetCurrentResourceName();
         private int deployTime = (int)ParseConfigValue<int>("deploy_time", 2500);
@@ -70,7 +69,7 @@ namespace spikestrips.Client
 
             if (closestStrip == 0 || NetworkGetEntityOwner(closestStrip) != Game.Player.Handle)
             {
-                await Delay(3500);
+                await Delay(3000);
                 return;
             }
 
@@ -82,7 +81,7 @@ namespace spikestrips.Client
                 return;
             }
 
-            if (CanUseSpikestrips && dist <= 2.8f)
+            if (CanUseSpikestrips && dist <= 4.3f)
             {
                 Screen.DisplayHelpTextThisFrame("Press ~INPUT_DETONATE~ to retract the spikestrips");
 
@@ -96,8 +95,11 @@ namespace spikestrips.Client
                     await Delay(retractTime);
                     TriggerServerEvent("geneva-spikestrips:server:deleteSpikestrips");
                     await Delay(150);
+                    return;
                 }
             }
+
+            await Delay(0);
         }
 
         [Command("spikestrips")]
@@ -116,7 +118,8 @@ namespace spikestrips.Client
                 return;
             }
 
-            if (!int.TryParse(args[0], out int numToDeploy) || numToDeploy < minSpikes || numToDeploy > maxSpikes)
+            int numToDeploy = int.TryParse(args[0], out int n) && n >= minSpikes && n <= maxSpikes ? n : -1;
+            if (numToDeploy == -1)
             {
                 TriggerEvent("chat:addMessage", new
                 {
