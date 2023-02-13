@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -9,16 +8,16 @@ namespace spikestrips.Server
 {
     public class ServerMain : BaseScript
     {
-        private uint spikeModel = (uint)GetHashKey("p_ld_stinger_s");
-        private string ourResourceName = GetCurrentResourceName();
-        private List<int> spawnedStrips = new();
-        private Vector3 spawnCoords;
-        private int numDeleting = 0;
+        private readonly uint _spikeModel = (uint)GetHashKey("p_ld_stinger_s");
+        private static readonly string ResourceName = GetCurrentResourceName();
+        private readonly List<int> _spawnedStrips = new();
+        private Vector3 _spawnCoords;
+        private int _numDeleting;
 
         [EventHandler("onResourceStop")]
         private void OnResourceStop(string resourceName)
         {
-            if (resourceName != ourResourceName || spawnedStrips.Count == 0) return;
+            if (resourceName != ResourceName || _spawnedStrips.Count == 0) return;
             DeleteAllStrips();
         }
 
@@ -28,7 +27,7 @@ namespace spikestrips.Server
             await Delay(30000);
 
             int playerCount = Players.Count();
-            if (playerCount == 0 && spawnedStrips.Count > 0)
+            if (playerCount == 0 && _spawnedStrips.Count > 0)
             {
                 DeleteAllStrips();
             }
@@ -36,14 +35,14 @@ namespace spikestrips.Server
 
         private void DeleteAllStrips()
         {
-            numDeleting = spawnedStrips.Count;
-            Debug.WriteLine($"Deleting {numDeleting} spikestrip(s).");
+            _numDeleting = _spawnedStrips.Count;
+            Debug.WriteLine($"Deleting {_numDeleting} spikestrip(s).");
 
-            for (int i = 0; i < spawnedStrips.Count; i++)
+            for (int i = 0; i < _spawnedStrips.Count; i++)
             {
-                int handle = spawnedStrips[i];
+                int handle = _spawnedStrips[i];
                 DeleteEntity(handle);
-                spawnedStrips.RemoveAt(i--);
+                _spawnedStrips.RemoveAt(i--);
             }
         }
 
@@ -55,23 +54,22 @@ namespace spikestrips.Server
 
             for (int i = 0; i < numToDeploy; i++)
             {
-                spawnCoords = new Vector3(plyPos.X, plyPos.Y, plyPos.Z) + fwdVec * (3.4f + (4.825f * i));
-                Entity entity = new Prop(CreateObject((int)spikeModel, spawnCoords.X, spawnCoords.Y, (float)groundHeights[i], true, true, false));
+                _spawnCoords = new Vector3(plyPos.X, plyPos.Y, plyPos.Z) + fwdVec * (3.4f + (4.825f * i));
+                Entity entity = new Prop(CreateObject((int)_spikeModel, _spawnCoords.X, _spawnCoords.Y, (float)groundHeights[i], true, true, false));
                 entity.Heading = heading;
                 entity.IsPositionFrozen = true;
 
-                spawnedStrips.Add(entity.Handle);
+                _spawnedStrips.Add(entity.Handle);
             }
         }
 
         [EventHandler("geneva-spikestrips:server:deleteSpikestrips")]
         private void DeleteSpikestrips([FromSource] Player source)
         {
-            int playerHandle = int.Parse(source.Handle);
-            foreach (int handle in spawnedStrips.ToList())
+            foreach (int handle in _spawnedStrips.ToList())
             {
                 DeleteEntity(handle);
-                spawnedStrips.Remove(handle);
+                _spawnedStrips.Remove(handle);
             }
         }
 
@@ -90,7 +88,6 @@ namespace spikestrips.Server
                     color = new[] {255, 0, 0},
                     args = new[] {"[Spikestrips]", "You can't execute this!"}
                 });
-                return;
             }
         }
     }

@@ -8,8 +8,8 @@ namespace spikestrips.Client
 {
     public class ClientMain : BaseScript
     {
-        private readonly uint SpikeModel = (uint)GetHashKey("p_ld_stinger_s");
-        private bool IsDeployingStrips = false;
+        private readonly uint _spikeModel = (uint)GetHashKey("p_ld_stinger_s");
+        private bool _isDeployingStrips;
         private static readonly string ResourceName = GetCurrentResourceName();
         private static readonly int DeployTime = GetConfigValue("deploy_time", 1500);
         private static readonly int RetractTime = GetConfigValue("retract_time", 1500);
@@ -50,7 +50,7 @@ namespace spikestrips.Client
         private async Task PickupTick()
         {
             Vector3 plyPos = Game.PlayerPed.Position;
-            int closestStrip = GetClosestObjectOfType(plyPos.X, plyPos.Y, plyPos.Z, 15.0f, SpikeModel, false, false, false);
+            int closestStrip = GetClosestObjectOfType(plyPos.X, plyPos.Y, plyPos.Z, 15.0f, _spikeModel, false, false, false);
 
             if (closestStrip == 0 || NetworkGetEntityOwner(closestStrip) != Game.Player.Handle)
             {
@@ -81,7 +81,6 @@ namespace spikestrips.Client
                     RemoveAnimDict("amb@medic@standing@kneel@idle_a");
                     TriggerServerEvent("geneva-spikestrips:server:deleteSpikestrips");
                     await Delay(150);
-                    return;
                 }
             }
         }
@@ -98,7 +97,7 @@ namespace spikestrips.Client
             }
 
             Vector3 pedCoords = playerPed.Position;
-            int closestStrip = GetClosestObjectOfType(pedCoords.X, pedCoords.Y, pedCoords.Z, 35.0f, SpikeModel, false, false, false);
+            int closestStrip = GetClosestObjectOfType(pedCoords.X, pedCoords.Y, pedCoords.Z, 35.0f, _spikeModel, false, false, false);
             if (closestStrip == 0)
             {
                 await Delay(1000);
@@ -121,7 +120,7 @@ namespace spikestrips.Client
         {
             Vector3 minVec = new Vector3();
             Vector3 maxVec = new Vector3();
-            GetModelDimensions(SpikeModel, ref minVec, ref maxVec);
+            GetModelDimensions(_spikeModel, ref minVec, ref maxVec);
 
             Vector3 minResult = minVec;
             Vector3 maxResult = maxVec;
@@ -140,7 +139,7 @@ namespace spikestrips.Client
         [Command("spikestrips")]
         private async void SpawnSpikestrips(string[] args)
         {
-            if (IsDeployingStrips) return;
+            if (_isDeployingStrips) return;
             Ped playerPed = Game.PlayerPed;
 
             if (!CanUseSpikestrips)
@@ -164,7 +163,7 @@ namespace spikestrips.Client
                 return;
             }
 
-            IsDeployingStrips = true;
+            _isDeployingStrips = true;
             Screen.ShowNotification("Deploying...");
 
             PlayKneelAnim(true);
@@ -179,7 +178,7 @@ namespace spikestrips.Client
             }
             TriggerServerEvent("geneva-spikestrips:server:spawnStrips", numToDeploy, playerPed.ForwardVector, groundHeights);
             Screen.ShowNotification("Deployed!", true);
-            IsDeployingStrips = false;
+            _isDeployingStrips = false;
         }
 
         private async void PlayKneelAnim(bool deploy)
