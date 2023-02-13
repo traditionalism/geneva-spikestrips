@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using CitizenFX.Core;
@@ -9,13 +8,13 @@ namespace spikestrips.Client
 {
     public class ClientMain : BaseScript
     {
-        private uint spikeModel = (uint)GetHashKey("p_ld_stinger_s");
-        private bool isDeployingStrips = false;
-        private static string ourResourceName = GetCurrentResourceName();
-        private int deployTime = (int)ParseConfigValue<int>("deploy_time", 1500);
-        private int retractTime = (int)ParseConfigValue<int>("retract_time", 1500);
-        private int minSpikes = (int)ParseConfigValue<int>("min_spikes", 2);
-        private int maxSpikes = (int)ParseConfigValue<int>("max_spikes", 4);
+        private readonly uint SpikeModel = (uint)GetHashKey("p_ld_stinger_s");
+        private bool IsDeployingStrips = false;
+        private static readonly string ResourceName = GetCurrentResourceName();
+        private static readonly int DeployTime = GetConfigValue("deploy_time", 1500);
+        private static readonly int RetractTime = GetConfigValue("retract_time", 1500);
+        private static readonly int MinSpikes = GetConfigValue("min_spikes", 2);
+        private static readonly int MaxSpikes = GetConfigValue("max_spikes", 4);
         private static readonly Dictionary<string, int> Wheels = new Dictionary<string, int>()
         {
             {"wheel_lf", 0},
@@ -26,47 +25,24 @@ namespace spikestrips.Client
             {"wheel_rr", 5}
         };
 
-        private static object ParseConfigValue<T>(string key, T defaultValue)
+        private static int GetConfigValue(string key, int defaultValue)
         {
-            string value = GetConfigValue(key);
-            if (typeof(T) == typeof(int))
+            string value = GetResourceMetadata(ResourceName, key, GetNumResourceMetadata(ResourceName, key) - 1);
+            if (int.TryParse(value, out int result))
             {
-                if (int.TryParse(value, out int result))
-                {
-                    return result;
-                }
-            }
-            else if (typeof(T) == typeof(string))
-            {
-                if (!string.IsNullOrEmpty(value))
-                {
-                    return value;
-                }
+                return result;
             }
 
-            Debug.WriteLine($"~r~Error parsing config value '{value}' for metadata key '{key}'~s~");
+            Debug.WriteLine($"failed to parse config value '{value}' for metadata key '{key}'");
             return defaultValue;
         }
 
-        private static string GetConfigValue(string key)
-        {
-            try
-            {
-                return GetResourceMetadata(ourResourceName, key, GetNumResourceMetadata(ourResourceName, key) - 1);
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"~r~Error getting config value for metadata key '{key}': {ex.Message}~s~");
-                return "";
-            }
-        }
-
-        private bool CanUseSpikestrips
+        private static bool CanUseSpikestrips
         {
             get
             {
-                Ped player = Game.PlayerPed;
-                return player.IsAlive && !player.IsInVehicle() && !player.IsGettingIntoAVehicle && !player.IsClimbing && !player.IsVaulting && player.IsOnFoot && !player.IsRagdoll && !player.IsSwimming;
+                Ped playerPed = Game.PlayerPed;
+                return playerPed.IsAlive && !playerPed.IsInVehicle() && !playerPed.IsGettingIntoAVehicle && !playerPed.IsClimbing && !playerPed.IsVaulting && playerPed.IsOnFoot && !playerPed.IsRagdoll && !playerPed.IsSwimming;
             }
         }
 
@@ -74,7 +50,7 @@ namespace spikestrips.Client
         private async Task PickupTick()
         {
             Vector3 plyPos = Game.PlayerPed.Position;
-            int closestStrip = GetClosestObjectOfType(plyPos.X, plyPos.Y, plyPos.Z, 15.0f, spikeModel, false, false, false);
+            int closestStrip = GetClosestObjectOfType(plyPos.X, plyPos.Y, plyPos.Z, 15.0f, SpikeModel, false, false, false);
 
             if (closestStrip == 0 || NetworkGetEntityOwner(closestStrip) != Game.Player.Handle)
             {
@@ -101,7 +77,8 @@ namespace spikestrips.Client
                     SetEntityHeading(Game.PlayerPed.Handle, heading);
 
                     PlayKneelAnim(false);
-                    await Delay(retractTime);
+                    await Delay(RetractTime);
+                    RemoveAnimDict("amb@medic@standing@kneel@idle_a");
                     TriggerServerEvent("geneva-spikestrips:server:deleteSpikestrips");
                     await Delay(150);
                     return;
@@ -112,31 +89,29 @@ namespace spikestrips.Client
         [Tick]
         private async Task CheckForSpikedTick()
         {
-            Ped player = Game.PlayerPed;
-            int veh = GetVehiclePedIsUsing(player.Handle);
-            if (veh == 0 || GetPedInVehicleSeat(veh, -1) != player.Handle)
+            Ped playerPed = Game.PlayerPed;
+            Vehicle veh = playerPed.CurrentVehicle;
+            if (veh == null || veh.Driver != playerPed)
             {
                 await Delay(2500);
                 return;
             }
 
-            Vector3 pedCoords = player.Position;
-            int closestStrip = GetClosestObjectOfType(pedCoords.X, pedCoords.Y, pedCoords.Z, 30.0f, spikeModel, false, false, false);
+            Vector3 pedCoords = playerPed.Position;
+            int closestStrip = GetClosestObjectOfType(pedCoords.X, pedCoords.Y, pedCoords.Z, 35.0f, SpikeModel, false, false, false);
             if (closestStrip == 0)
             {
-                await Delay(1500);
+                await Delay(1000);
                 return;
             }
 
-            if (!IsEntityTouchingEntity(veh, closestStrip)) return;
-
             foreach (KeyValuePair<string, int> wheel in Wheels)
             {
-                if (!IsVehicleTyreBurst(veh, wheel.Value, false))
+                if (!IsVehicleTyreBurst(veh.Handle, wheel.Value, false))
                 {
-                    if (TouchingSpike(GetWorldPositionOfEntityBone(veh, GetEntityBoneIndexByName(veh, wheel.Key)), closestStrip))
+                    if (TouchingSpike(GetWorldPositionOfEntityBone(veh.Handle, GetEntityBoneIndexByName(veh.Handle, wheel.Key)), closestStrip))
                     {
-                        SetVehicleTyreBurst(veh, wheel.Value, true, 1000.0f);
+                        SetVehicleTyreBurst(veh.Handle, wheel.Value, false, 1000.0f);
                     }
                 }
             }
@@ -146,7 +121,7 @@ namespace spikestrips.Client
         {
             Vector3 minVec = new Vector3();
             Vector3 maxVec = new Vector3();
-            GetModelDimensions((uint)GetEntityModel(strip), ref minVec, ref maxVec);
+            GetModelDimensions(SpikeModel, ref minVec, ref maxVec);
 
             Vector3 minResult = minVec;
             Vector3 maxResult = maxVec;
@@ -159,14 +134,14 @@ namespace spikestrips.Client
             Vector3 offset1 = GetOffsetFromEntityInWorldCoords(strip, 0.0f, l / 2, h * -1);
             Vector3 offset2 = GetOffsetFromEntityInWorldCoords(strip, 0.0f, l / 2 * -1, h);
 
-            return IsPointInAngledArea(coords.X, coords.Y, coords.Z, offset1.X, offset1.Y, offset1.Z, offset2.X, offset2.Y, offset2.Z, w * 4, false, false);
+            return IsPointInAngledArea(coords.X, coords.Y, coords.Z, offset1.X, offset1.Y, offset1.Z, offset2.X, offset2.Y, offset2.Z, w * 2, false, false);
         }
 
         [Command("spikestrips")]
         private async void SpawnSpikestrips(string[] args)
         {
-            if (isDeployingStrips) return;
-            Ped player = Game.PlayerPed;
+            if (IsDeployingStrips) return;
+            Ped playerPed = Game.PlayerPed;
 
             if (!CanUseSpikestrips)
             {
@@ -178,7 +153,7 @@ namespace spikestrips.Client
                 return;
             }
 
-            int numToDeploy = int.TryParse(args[0], out int n) && n >= minSpikes && n <= maxSpikes ? n : -1;
+            int numToDeploy = int.TryParse(args[0], out int n) && n >= MinSpikes && n <= MaxSpikes ? n : -1;
             if (numToDeploy == -1)
             {
                 TriggerEvent("chat:addMessage", new
@@ -189,34 +164,34 @@ namespace spikestrips.Client
                 return;
             }
 
-            isDeployingStrips = true;
+            IsDeployingStrips = true;
             Screen.ShowNotification("Deploying...");
 
             PlayKneelAnim(true);
-            await Delay(deployTime);
+            await Delay(DeployTime);
             RemoveAnimDict("amb@medic@standing@kneel@idle_a");
             List<float> groundHeights = new List<float>();
             for (int i = 0; i < numToDeploy; i++)
             {
-                Vector3 spawnCoords = new Vector3(player.Position.X, player.Position.Y, player.Position.Z) + player.ForwardVector * (3.4f + (4.825f * i));
+                Vector3 spawnCoords = new Vector3(playerPed.Position.X, playerPed.Position.Y, playerPed.Position.Z) + playerPed.ForwardVector * (3.4f + (4.825f * i));
                 float groundHeight = World.GetGroundHeight(spawnCoords);
                 groundHeights.Add(groundHeight);
             }
-            TriggerServerEvent("geneva-spikestrips:server:spawnStrips", numToDeploy, player.ForwardVector, groundHeights);
+            TriggerServerEvent("geneva-spikestrips:server:spawnStrips", numToDeploy, playerPed.ForwardVector, groundHeights);
             Screen.ShowNotification("Deployed!", true);
-            isDeployingStrips = false;
+            IsDeployingStrips = false;
         }
 
         private async void PlayKneelAnim(bool deploy)
         {
-            Ped player = Game.PlayerPed;
-            SetCurrentPedWeapon(player.Handle, (uint)WeaponHash.Unarmed, true);
+            Ped playerPed = Game.PlayerPed;
+            SetCurrentPedWeapon(playerPed.Handle, (uint)WeaponHash.Unarmed, true);
             RequestAnimDict("amb@medic@standing@kneel@idle_a");
             while (!HasAnimDictLoaded("amb@medic@standing@kneel@idle_a"))
             {
                 await Delay(0);
             }
-            TaskPlayAnim(player.Handle, "amb@medic@standing@kneel@idle_a", "idle_a", 2.5f, 2.5f, deploy ? deployTime : retractTime, 0, 0.0f, false, false, false);
+            TaskPlayAnim(playerPed.Handle, "amb@medic@standing@kneel@idle_a", "idle_a", 2.5f, 2.5f, deploy ? DeployTime : RetractTime, 0, 0.0f, false, false, false);
         }
     }
 }
