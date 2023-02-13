@@ -111,7 +111,7 @@ namespace spikestrips.Client
                 {
                     if (TouchingSpike(GetWorldPositionOfEntityBone(veh.Handle, GetEntityBoneIndexByName(veh.Handle, wheel.Key)), closestStrip))
                     {
-                        SetVehicleTyreBurst(veh.Handle, wheel.Value, false, 1000.0f);
+                        SetVehicleTyreBurst(veh.Handle, wheel.Value, false, 1.0f);
                     }
                 }
             }
