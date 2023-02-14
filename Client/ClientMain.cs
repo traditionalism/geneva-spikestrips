@@ -11,6 +11,7 @@ namespace spikestrips.Client
     {
         private readonly uint _spikeModel = (uint)GetHashKey("p_ld_stinger_s");
         private bool _isDeployingStrips;
+        private bool _hasDeployedStrips;
         private static readonly string ResourceName = GetCurrentResourceName();
         private static readonly int DeployTime = GetConfigValue("deploy_time", 1500);
         private static readonly int RetractTime = GetConfigValue("retract_time", 1500);
@@ -108,6 +109,7 @@ namespace spikestrips.Client
                     RemoveAnimDict("amb@medic@standing@kneel@idle_a");
                     TriggerServerEvent("geneva-spikestrips:server:deletePlayerSpikestrips");
                     await Delay(150);
+                    _hasDeployedStrips = false;
                 }
             }
         }
@@ -157,7 +159,7 @@ namespace spikestrips.Client
             if (_isDeployingStrips) return;
             Ped playerPed = Game.PlayerPed;
 
-            if (!CanUseSpikestrips)
+            if (!CanUseSpikestrips || _hasDeployedStrips)
             {
                 TriggerEvent("chat:addMessage", new
                 {
@@ -195,6 +197,7 @@ namespace spikestrips.Client
             TriggerServerEvent("geneva-spikestrips:server:spawnStrips", numToDeploy, playerPed.ForwardVector, groundHeights);
             Screen.ShowNotification("Deployed!", true);
             _isDeployingStrips = false;
+            _hasDeployedStrips = true;
         }
 
         private async void PlayKneelAnim(bool deploy)
