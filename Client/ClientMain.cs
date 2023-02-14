@@ -155,7 +155,7 @@ namespace spikestrips.Client
                 TriggerEvent("chat:addMessage", new
                 {
                     color = new[] { 255, 0, 0 },
-                    args = new[] { "[Spikestrips]", "Invalid spikestrip amount argument!" }
+                    args = new[] { "[Spikestrips]", "You can't deploy spikestrips right now!" }
                 });
                 return;
             }
