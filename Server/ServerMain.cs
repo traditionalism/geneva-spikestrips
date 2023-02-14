@@ -11,6 +11,7 @@ namespace spikestrips.Server
         private readonly uint _spikeModel = (uint)GetHashKey("p_ld_stinger_s");
         private static readonly string ResourceName = GetCurrentResourceName();
         private readonly List<int> _spawnedStrips = new();
+        private readonly Dictionary<int, int> _stripOwners = new Dictionary<int, int>();
         private Vector3 _spawnCoords;
         private int _numDeleting;
 
@@ -60,16 +61,27 @@ namespace spikestrips.Server
                 entity.IsPositionFrozen = true;
 
                 _spawnedStrips.Add(entity.Handle);
+                _stripOwners.Add(entity.Handle, int.Parse(source.Handle));
             }
         }
 
-        [EventHandler("geneva-spikestrips:server:deleteSpikestrips")]
-        private void DeleteSpikestrips([FromSource] Player source)
+        [EventHandler("geneva-spikestrips:server:deletePlayerSpikestrips")]
+        private void DeletePlayerSpikestrips([FromSource] Player source)
         {
-            foreach (int handle in _spawnedStrips.ToList())
+            List<int> handlesToRemove = new List<int>();
+            foreach (int handle in _spawnedStrips)
             {
-                DeleteEntity(handle);
+                if (_stripOwners.TryGetValue(handle, out int stripOwner) && stripOwner == int.Parse(source.Handle))
+                {
+                    DeleteEntity(handle);
+                    handlesToRemove.Add(handle);
+                }
+            }
+
+            foreach (int handle in handlesToRemove)
+            {
                 _spawnedStrips.Remove(handle);
+                _stripOwners.Remove(handle);
             }
         }
 

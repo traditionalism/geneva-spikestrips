@@ -106,7 +106,7 @@ namespace spikestrips.Client
                     PlayKneelAnim(false);
                     await Delay(RetractTime);
                     RemoveAnimDict("amb@medic@standing@kneel@idle_a");
-                    TriggerServerEvent("geneva-spikestrips:server:deleteSpikestrips");
+                    TriggerServerEvent("geneva-spikestrips:server:deletePlayerSpikestrips");
                     await Delay(150);
                 }
             }
