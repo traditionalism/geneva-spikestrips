@@ -121,15 +121,15 @@ namespace spikestrips.Client
             Vehicle veh = playerPed.CurrentVehicle;
             if (veh == null || veh.Driver != playerPed)
             {
-                await Delay(2000);
+                await Delay(3000);
                 return;
             }
 
             Vector3 pedCoords = playerPed.Position;
-            int closestStrip = GetClosestObjectOfType(pedCoords.X, pedCoords.Y, pedCoords.Z, 35.0f, _spikeModel, false, false, false);
+            int closestStrip = GetClosestObjectOfType(pedCoords.X, pedCoords.Y, pedCoords.Z, 30.0f, _spikeModel, false, false, false);
             if (closestStrip == 0)
             {
-                await Delay(1000);
+                await Delay(500);
                 return;
             }
 
