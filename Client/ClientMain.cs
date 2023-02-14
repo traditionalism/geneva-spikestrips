@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using System.Linq;
 using CitizenFX.Core;
 using CitizenFX.Core.UI;
 using static CitizenFX.Core.Native.API;
@@ -21,7 +22,6 @@ namespace spikestrips.Client
         private readonly float _w;
         private readonly float _l;
         private readonly float _h;
-
         private static readonly Dictionary<string, int> Wheels = new Dictionary<string, int>()
         {
             { "wheel_lf", 0 },
@@ -70,30 +70,37 @@ namespace spikestrips.Client
         private async Task PickupTick()
         {
             Vector3 plyPos = Game.PlayerPed.Position;
-            int closestStrip = GetClosestObjectOfType(plyPos.X, plyPos.Y, plyPos.Z, 15.0f, _spikeModel, false, false, false);
+            Prop prop = World.GetAllProps()
+                            .Where(p => p.Model == _spikeModel)
+                            .OrderBy(p => Vector3.DistanceSquared(p.Position, plyPos))
+                            .FirstOrDefault();
 
-            if (closestStrip == 0 || NetworkGetEntityOwner(closestStrip) != Game.Player.Handle)
+            if (prop == null || NetworkGetEntityOwner(prop.Handle) != Game.Player.Handle)
             {
                 await Delay(3000);
                 return;
             }
 
-            float dist = Vector3.DistanceSquared(plyPos, GetEntityCoords(closestStrip, false));
+            float dist = Vector3.DistanceSquared(plyPos, prop.Position);
 
-            if (dist >= 6.0f)
+            if (dist > 10.0f)
             {
-                await Delay(1500);
+                await Delay(2000);
+                return;
+            }
+            else if (dist > 5.0f)
+            {
+                await Delay(1000);
                 return;
             }
 
-            if (CanUseSpikestrips && dist <= 4.3f)
+            if (CanUseSpikestrips && dist <= 4.5f)
             {
-                Screen.DisplayHelpTextThisFrame("Press ~INPUT_CHARACTER_WHEEL~ + ~INPUT_CONTEXT~ to retract the spikestrips");
+                Screen.DisplayHelpTextThisFrame("Press ~INPUT_CHARACTER_WHEEL~ + ~INPUT_CONTEXT~ to remove the spikestrips");
 
                 if (IsControlPressed(0, 19) && IsControlPressed(0, 51))
                 {
-                    Vector3 spikePos = GetEntityCoords(closestStrip, false);
-                    float heading = GetHeadingFromVector_2d(spikePos.X - plyPos.X, spikePos.X - plyPos.Y);
+                    float heading = GetHeadingFromVector_2d(prop.Position.X - plyPos.X, prop.Position.X - plyPos.Y);
                     SetEntityHeading(Game.PlayerPed.Handle, heading);
 
                     PlayKneelAnim(false);
@@ -112,7 +119,7 @@ namespace spikestrips.Client
             Vehicle veh = playerPed.CurrentVehicle;
             if (veh == null || veh.Driver != playerPed)
             {
-                await Delay(2500);
+                await Delay(2000);
                 return;
             }
 
