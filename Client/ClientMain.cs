@@ -15,15 +15,33 @@ namespace spikestrips.Client
         private static readonly int RetractTime = GetConfigValue("retract_time", 1500);
         private static readonly int MinSpikes = GetConfigValue("min_spikes", 2);
         private static readonly int MaxSpikes = GetConfigValue("max_spikes", 4);
+        private readonly Vector3 _minVec;
+        private readonly Vector3 _maxVec;
+        private readonly Vector3 size;
+        private readonly float _w;
+        private readonly float _l;
+        private readonly float _h;
+
         private static readonly Dictionary<string, int> Wheels = new Dictionary<string, int>()
         {
-            {"wheel_lf", 0},
-            {"wheel_rf", 1},
-            {"wheel_lm", 2},
-            {"wheel_rm", 3},
-            {"wheel_lr", 4},
-            {"wheel_rr", 5}
+            { "wheel_lf", 0 },
+            { "wheel_rf", 1 },
+            { "wheel_lm", 2 },
+            { "wheel_rm", 3 },
+            { "wheel_lr", 4 },
+            { "wheel_rr", 5 }
         };
+
+        public ClientMain()
+        {
+            GetModelDimensions(_spikeModel, ref _minVec, ref _maxVec);
+
+            size = _maxVec - _minVec;
+
+            _w = size.X;
+            _l = size.Y;
+            _h = size.Z;
+        }
 
         private static int GetConfigValue(string key, int defaultValue)
         {
@@ -42,7 +60,9 @@ namespace spikestrips.Client
             get
             {
                 Ped playerPed = Game.PlayerPed;
-                return playerPed.IsAlive && !playerPed.IsInVehicle() && !playerPed.IsGettingIntoAVehicle && !playerPed.IsClimbing && !playerPed.IsVaulting && playerPed.IsOnFoot && !playerPed.IsRagdoll && !playerPed.IsSwimming;
+                return playerPed.IsAlive && !playerPed.IsInVehicle() && !playerPed.IsGettingIntoAVehicle &&
+                       !playerPed.IsClimbing && !playerPed.IsVaulting && playerPed.IsOnFoot && !playerPed.IsRagdoll &&
+                       !playerPed.IsSwimming;
             }
         }
 
@@ -118,22 +138,10 @@ namespace spikestrips.Client
 
         private bool TouchingSpike(Vector3 coords, int strip)
         {
-            Vector3 minVec = new Vector3();
-            Vector3 maxVec = new Vector3();
-            GetModelDimensions(_spikeModel, ref minVec, ref maxVec);
+            Vector3 offset1 = GetOffsetFromEntityInWorldCoords(strip, 0.0f, _l / 2, _h * -1);
+            Vector3 offset2 = GetOffsetFromEntityInWorldCoords(strip, 0.0f, _l / 2 * -1, _h);
 
-            Vector3 minResult = minVec;
-            Vector3 maxResult = maxVec;
-            Vector3 size = maxResult - minResult;
-
-            float w = size.X;
-            float l = size.Y;
-            float h = size.Z;
-
-            Vector3 offset1 = GetOffsetFromEntityInWorldCoords(strip, 0.0f, l / 2, h * -1);
-            Vector3 offset2 = GetOffsetFromEntityInWorldCoords(strip, 0.0f, l / 2 * -1, h);
-
-            return IsPointInAngledArea(coords.X, coords.Y, coords.Z, offset1.X, offset1.Y, offset1.Z, offset2.X, offset2.Y, offset2.Z, w * 2, false, false);
+            return IsPointInAngledArea(coords.X, coords.Y, coords.Z, offset1.X, offset1.Y, offset1.Z, offset2.X, offset2.Y, offset2.Z, _w * 2, false, false);
         }
 
         [Command("spikestrips")]
@@ -146,19 +154,18 @@ namespace spikestrips.Client
             {
                 TriggerEvent("chat:addMessage", new
                 {
-                    color = new[] {255, 0, 0},
-                    args = new[] {"[Spikestrips]", "You can't deploy spikestrips right now!"}
+                    color = new[] { 255, 0, 0 },
+                    args = new[] { "[Spikestrips]", "Invalid spikestrip amount argument!" }
                 });
                 return;
             }
 
-            int numToDeploy = int.TryParse(args[0], out int n) && n >= MinSpikes && n <= MaxSpikes ? n : -1;
-            if (numToDeploy == -1)
+            if (args.Length != 1 || !int.TryParse(args[0], out int numToDeploy) || numToDeploy < MinSpikes || numToDeploy > MaxSpikes)
             {
                 TriggerEvent("chat:addMessage", new
                 {
-                    color = new[] {255, 0, 0},
-                    args = new[] {"[Spikestrips]", "Invalid spikestrip amount argument!"}
+                    color = new[] { 255, 0, 0 },
+                    args = new[] { "[Spikestrips]", "Invalid spikestrip amount argument!" }
                 });
                 return;
             }
@@ -169,6 +176,7 @@ namespace spikestrips.Client
             PlayKneelAnim(true);
             await Delay(DeployTime);
             RemoveAnimDict("amb@medic@standing@kneel@idle_a");
+
             List<float> groundHeights = new List<float>();
             for (int i = 0; i < numToDeploy; i++)
             {
@@ -176,6 +184,7 @@ namespace spikestrips.Client
                 float groundHeight = World.GetGroundHeight(spawnCoords);
                 groundHeights.Add(groundHeight);
             }
+
             TriggerServerEvent("geneva-spikestrips:server:spawnStrips", numToDeploy, playerPed.ForwardVector, groundHeights);
             Screen.ShowNotification("Deployed!", true);
             _isDeployingStrips = false;
@@ -190,6 +199,7 @@ namespace spikestrips.Client
             {
                 await Delay(0);
             }
+
             TaskPlayAnim(playerPed.Handle, "amb@medic@standing@kneel@idle_a", "idle_a", 2.5f, 2.5f, deploy ? DeployTime : RetractTime, 0, 0.0f, false, false, false);
         }
     }
